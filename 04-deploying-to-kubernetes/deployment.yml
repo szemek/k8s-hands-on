@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      name: nginx
+      labels:
+        service: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: przemyslawdabek/nginx:v1
+          resources:
+            requests:
+              cpu: 5m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 80
+              name: web
+          readinessProbe:
+            httpGet:
+              path: /
+              port: web
+            initialDelaySeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    service: nginx
+  annotations:
+    kubernetesReverseproxy: '{"hosts":[{"host":"<insert-host-here>", "port": 80, "webSocket": 1}]}'
+spec:
+  ports:
+    - port: 80
+      targetPort: web
+  selector:
+    service: nginx
